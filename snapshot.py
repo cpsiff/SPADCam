@@ -17,12 +17,11 @@ def get_depth_frame(cam):
         amplitude_buf = frame.getAmplitudeData()
     else:
         raise RuntimeError("Depth camera frame failed to capture")
-        
+
     cam.releaseFrame(frame)
     return depth_buf, amplitude_buf
 
 def main():
-
     curtime = time.strftime("%Y%m%d-%H%M%S")
     save_dir = os.path.join(CAPTURES_DIR, curtime)
     os.makedirs(save_dir)
