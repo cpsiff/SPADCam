@@ -34,11 +34,6 @@ def main():
 
     depth_frame, amplitude_frame = get_depth_frame(cam)
 
-    print(depth_frame.shape)
-    print(amplitude_frame.shape)
-
-    print(amplitude_frame.max())
-
     # scale depth frame so that 4m is total white in depth image
     # this mimics https://docs.arducam.com/Raspberry-Pi-Camera/Tof-camera/Arducam-ToF-Camera-SDK/
     depth_frame = np.nan_to_num(depth_frame)
