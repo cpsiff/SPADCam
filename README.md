@@ -10,5 +10,18 @@ If you're getting an error related to the Arducam that's something like "can't f
 
 When trying to install numpy (necessary for ArduCamDepthCamera library, but weirdly not installed automatically with it), I ran into the issue described here: https://github.com/numpy/numpy/issues/16012. The fix mentioned there (`sudo apt-get install libatlas-base-dev`) worked to fix the issue for me
 
+To connect an I2C depth sensor directly to the pi, you need to make the following connections: 
+
+GND on sensor (black wire on qwiic) -> GND on Pi
+
+3.3V on sensor (red wire on qwiic) -> 3.3V on Pi
+
+SDA on sensor (blue wire on qwiic) -> BCM2 (SDA) on Pi
+
+SCL on sensor (yellow wire on qwiic) -> BCM3 (SCL) on Pi
+
+![pi_pins](pi_pins.png)
+
+
 ## Resources
 [Arducam Depth Camera Documentation](https://docs.arducam.com/Raspberry-Pi-Camera/Tof-camera/TOF-Camera/)

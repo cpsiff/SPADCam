@@ -21,6 +21,9 @@ def get_depth_frame(cam):
     cam.releaseFrame(frame)
     return depth_buf, amplitude_buf
 
+def get_histogram():
+    return np.zeros(128)
+
 def main():
     curtime = time.strftime("%Y%m%d-%H%M%S")
     save_dir = os.path.join(CAPTURES_DIR, curtime)
