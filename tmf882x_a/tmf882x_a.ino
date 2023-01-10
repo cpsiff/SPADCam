@@ -149,6 +149,13 @@ void setup ( )
     stateTmf882x = TMF882X_STATE_ERROR;
   }
 
+  //Perform factory calibration (might as well do this every time at startup - same as receiving 'f' on serial input in example script)
+  tmf882xConfigure( TMF882X_A, 1, 4000, configSpadId[configNr], 0 );    // no histogram dumping in factory calibration allowed, 4M iterations for factory calibration recommended
+  tmf882xFactoryCalibration( TMF882X_A );
+
+  //Configure the period, number of iterations (KiloIter), and spad map (SpadId)
+  tmf882xConfigure( TMF882X_A, 100, 900, TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_1, 1 );   
+
   //Begin measuring (same as recieving an 'm' on serial input in example script)
   tmf882xClrAndEnableInterrupts( TMF882X_A, TMF882X_APP_I2C_RESULT_IRQ_MASK | TMF882X_APP_I2C_RAW_HISTOGRAM_IRQ_MASK );
   tmf882xStartMeasurement( TMF882X_A );
