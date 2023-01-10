@@ -31,7 +31,7 @@ def main():
     while(True):
         line = arduino.readline().rstrip()
         buffer.append(line)
-        
+    
         plt.pause(0.001) # https://stackoverflow.com/questions/28269157/plotting-in-a-non-blocking-way-with-matplotlib
 
         if line.decode('utf-8').rstrip().split(',')[TMF882X_IDX_FIELD] == "29":
