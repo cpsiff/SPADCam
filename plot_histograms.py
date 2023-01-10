@@ -6,6 +6,8 @@ import serial
 import csv
 import time
 import os
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
 PORT = "/dev/ttyACM0"
 OUTPUT_FOLDER = os.path.join(os.path.dirname(__file__), 'output/histograms/')
@@ -22,14 +24,25 @@ def main():
 
     buffer = []
 
+    fig, ax = plt.subplots()
+    plt.ion()
+    plt.show()
+
     while(True):
         line = arduino.readline().rstrip()
         buffer.append(line)
+        
+        plt.pause(0.001) # https://stackoverflow.com/questions/28269157/plotting-in-a-non-blocking-way-with-matplotlib
+
         if line.decode('utf-8').rstrip().split(',')[TMF882X_IDX_FIELD] == "29":
             processed_hists = process_raw_hists(buffer)
-            # append_hists_to_file(f'{CUR_TIME}.csv', processed_hists)
-            
             buffer = []
+            
+            ax.clear()
+            hist = processed_hists[5] # plot just the center histogram for now
+            ax.bar(range(len(hist)), hist, width=1.0)
+            ax.set_ylabel("detection count")
+            ax.set_xlabel("bin number / time / distance")
 
 def process_raw_hists(buffer):
     rawSum = [[0 for _ in range(TMF882X_BINS)] for _ in range(TMF882X_CHANNELS)]
@@ -63,13 +76,6 @@ def process_raw_hists(buffer):
             print("Incomplete line read - ignoring")
     
     return rawSum
-
-def append_hists_to_file(file_name, hists):
-    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
-    with open(os.path.join(OUTPUT_FOLDER, file_name), 'a+', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        writer.writerows(hists)
 
 if __name__ == "__main__":
     main()
