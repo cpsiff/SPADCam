@@ -3,11 +3,11 @@ Read histograms from TMF8820, which has been loaded with the tmf882x_a/tmf882xa.
 """
 
 import serial
-import csv
 import time
 import os
 import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+
+from read_histograms import process_raw_hists
 
 PORT = "/dev/ttyACM0"
 OUTPUT_FOLDER = os.path.join(os.path.dirname(__file__), 'output/histograms/')
@@ -26,56 +26,31 @@ def main():
 
     fig, ax = plt.subplots()
     plt.ion()
-    plt.show()
+    plt.show(block=False)
+
+    first_buffer = True
 
     while(True):
         line = arduino.readline().rstrip()
         buffer.append(line)
-    
-        plt.pause(0.001) # https://stackoverflow.com/questions/28269157/plotting-in-a-non-blocking-way-with-matplotlib
 
         if line.decode('utf-8').rstrip().split(',')[TMF882X_IDX_FIELD] == "29":
-            processed_hists = process_raw_hists(buffer)
-            buffer = []
+            if not first_buffer: # throw out the first buffer, as it is probably incomplete
+                processed_hists = process_raw_hists(buffer)
+                buffer = []
+                
+                if processed_hists is not None:
+                    ax.clear()
+                    hist = processed_hists[5] # plot just the center histogram for now
+                    ax.bar(range(len(hist)), hist, width=1.0)
+                    ax.set_ylabel("detection count")
+                    ax.set_xlabel("bin number / time / distance")
             
-            ax.clear()
-            hist = processed_hists[5] # plot just the center histogram for now
-            ax.bar(range(len(hist)), hist, width=1.0)
-            ax.set_ylabel("detection count")
-            ax.set_xlabel("bin number / time / distance")
+            first_buffer = False
 
-def process_raw_hists(buffer):
-    rawSum = [[0 for _ in range(TMF882X_BINS)] for _ in range(TMF882X_CHANNELS)]
-
-    for line in buffer:
-        data = line.decode('utf-8')
-        data = data.replace('\r','')
-        data = data.replace('\n','')
-        row = data.split(',')
-
-        # print("row[0]", row[0])
-        if len(row) > 0 and row[0][0] == "#":
-            if row[0] == '#Raw' and len(row) == TMF882X_BINS+TMF882X_SKIP_FIELDS: # ignore lines that start with #obj
-                idx = int(row[TMF882X_IDX_FIELD]) # idx is the id of the histogram (e.g. 0-9 for 9 hists + calibration hist)
-                if ( idx >= 0 and idx <= 9 ):
-                    for col in range(TMF882X_BINS):
-                        rawSum[idx][col] = int( row[TMF882X_SKIP_FIELDS+col] )                                      # LSB is only assignement
-                elif ( idx >= 10 and idx <= 19 ):
-                    idx = idx - 10
-                    for col in range(TMF882X_BINS):
-                        rawSum[idx][col] = rawSum[idx][col] + int(row[TMF882X_SKIP_FIELDS+col]) * 256               # mid
-                elif ( idx >= 20 and idx <= 29 ):
-                    idx = idx - 20
-                    for col in range(TMF882X_BINS):
-                        rawSum[idx][col] = rawSum[idx][col] + int(row[TMF882X_SKIP_FIELDS+col]) * 256 * 256         # MSB
-
-            else:
-                print("Incomplete line read - ignoring")
-
-        else:
-            print("Incomplete line read - ignoring")
-    
-    return rawSum
+            # plt.pause() causes problems with reading from the serial port. It is what causes the
+            # WARNING: Buffer wrong size messages. But, I can't figure out a way to plot without it
+            plt.pause(0.0000001) # https://stackoverflow.com/questions/28269157/plotting-in-a-non-blocking-way-with-matplotlib
 
 if __name__ == "__main__":
     main()

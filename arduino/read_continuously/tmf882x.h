@@ -55,7 +55,7 @@
 #define APP_ERROR_NO_RESULT_PAGE    -4                    // did not receive a measurement result page
 #define APP_ERROR_NO_CALIB_PAGE     -5                    // this is no factory calibration page
 
-// available SPAD map IDs known by this driver version
+// available SPAD map IDs known by this driver version see https://ams.com/documents/20143/6015057/TMF882X_DS000693_5-00.pdf pg. 23
 #define TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_1 1 // 3x3 map, size 14x6    1. Normal Mode (29°x29°)        
 #define TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_2 2 // 3x3 map, size 14x9    2. Macro Mode (29°x43,5°)       
 #define TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_3 3 // 3x3 map, size 14x9    3. Macro Mode (29°x43,5°)       

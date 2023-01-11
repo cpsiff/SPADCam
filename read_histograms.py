@@ -28,10 +28,16 @@ def main():
         if line.decode('utf-8').rstrip().split(',')[TMF882X_IDX_FIELD] == "29":
             processed_hists = process_raw_hists(buffer)
             # append_hists_to_file(f'{CUR_TIME}.csv', processed_hists)
-            
+
             buffer = []
 
 def process_raw_hists(buffer):
+
+    print(len(buffer))
+    if len(buffer) != 31:
+        print("WARNING: Buffer wrong size - skipping and returning None")
+        return None
+
     rawSum = [[0 for _ in range(TMF882X_BINS)] for _ in range(TMF882X_CHANNELS)]
 
     for line in buffer:
@@ -40,7 +46,6 @@ def process_raw_hists(buffer):
         data = data.replace('\n','')
         row = data.split(',')
 
-        # print("row[0]", row[0])
         if len(row) > 0 and row[0][0] == "#":
             if row[0] == '#Raw' and len(row) == TMF882X_BINS+TMF882X_SKIP_FIELDS: # ignore lines that start with #obj
                 idx = int(row[TMF882X_IDX_FIELD]) # idx is the id of the histogram (e.g. 0-9 for 9 hists + calibration hist)
@@ -56,12 +61,9 @@ def process_raw_hists(buffer):
                     for col in range(TMF882X_BINS):
                         rawSum[idx][col] = rawSum[idx][col] + int(row[TMF882X_SKIP_FIELDS+col]) * 256 * 256         # MSB
 
-            else:
-                print("Incomplete line read - ignoring")
-
         else:
             print("Incomplete line read - ignoring")
-    
+
     return rawSum
 
 def append_hists_to_file(file_name, hists):

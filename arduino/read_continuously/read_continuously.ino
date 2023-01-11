@@ -37,7 +37,7 @@
 #define VERSION                     17
 
 // arduino uno can only do 400 KHz I2C
-#define I2C_CLK_SPEED               400000
+#define I2C_CLK_SPEED               1000000
 
 
 // how much logging we want - info prints the FW number
@@ -53,17 +53,10 @@
 // convendience macro to have a pointer to the driver structure
 #define TMF882X_A                   ( &tmf882x )
 
-// ---------------------------------------------- constants -----------------------------------------
-
-// for each configuration specifiy a period in milli-seconds
-const uint16_t configPeriod[3] = {33, 500, 100};
-
-// for each configuration specify the number of Kilo Iterations (Kilo = 1024)
-const uint16_t configKiloIter[3] = {537, 550, 900};
-
-// for each configuration select a SPAD map through the id
-const uint8_t  configSpadId[3] = {TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_1, TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_2, TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_7};
-
+// ---------------------------------------------- user config ---------------------------------------
+#define SPAD_MAP TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_1
+#define KILO_ITERS 4000 //see https://ams.com/documents/20143/6015057/TMF882X_DS000693_5-00.pdf pg. 21 for kilo_iters relation to period
+#define PERIOD 230
 
 // ---------------------------------------------- variables -----------------------------------------
 
@@ -95,9 +88,6 @@ void setup( );
 
 // Arduino main loop function, is executed cyclic
 void loop( );
-
-
-// ---------------------------------------------- functions -----------------------------------------
 
 
 // -------------------------------------------------------------------------------------------------------------
@@ -150,11 +140,13 @@ void setup ( )
   }
 
   //Perform factory calibration (might as well do this every time at startup - same as receiving 'f' on serial input in example script)
-  tmf882xConfigure( TMF882X_A, 1, 4000, configSpadId[configNr], 0 );    // no histogram dumping in factory calibration allowed, 4M iterations for factory calibration recommended
+  tmf882xConfigure( TMF882X_A, 1, 4000, SPAD_MAP, 0 );    // no histogram dumping in factory calibration allowed, 4M iterations for factory calibration recommended
   tmf882xFactoryCalibration( TMF882X_A );
 
   //Configure the period, number of iterations (KiloIter), and spad map (SpadId)
-  tmf882xConfigure( TMF882X_A, 100, 900, TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_1, 1 );   
+  
+  tmf882xConfigure( TMF882X_A, PERIOD, KILO_ITERS, SPAD_MAP, 1 );   //configuration I was originally using
+  // tmf882xConfigure( TMF882X_A, 1, 9, TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_1, 1 );   //try to go fast - it seems like we're limited by i2c speed, not the sensor speed. This leads to same frame rate
 
   //Begin measuring (same as recieving an 'm' on serial input in example script)
   tmf882xClrAndEnableInterrupts( TMF882X_A, TMF882X_APP_I2C_RESULT_IRQ_MASK | TMF882X_APP_I2C_RAW_HISTOGRAM_IRQ_MASK );
