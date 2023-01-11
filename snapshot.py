@@ -7,7 +7,7 @@ from PIL import Image as im
 import numpy as np
 import os
 import time
-from read_histograms import process_raw_hists
+from read_histograms import process_raw_hists, TMF882X_IDX_FIELD
 import serial
 
 CAPTURES_DIR = "captures"
@@ -67,6 +67,8 @@ def main():
 
     im.fromarray(amplitude_frame).convert('L').save(f"{save_dir}/amplitude.png")
 
+    hist = get_histogram()
+    print(hist)
 
 if __name__ == "__main__":
     main()
