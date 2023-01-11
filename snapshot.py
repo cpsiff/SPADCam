@@ -9,6 +9,7 @@ import os
 import time
 from read_histograms import process_raw_hists, TMF882X_IDX_FIELD
 import serial
+import csv
 
 CAPTURES_DIR = "captures"
 ARDUINO_SERIAL_PORT = "/dev/ttyACM0"
@@ -35,7 +36,7 @@ def get_histogram():
         line = arduino.readline().rstrip()
         if frames_finished >= 1:
             buffer.append(line)
-        
+
         if line.decode('utf-8').rstrip().split(',')[TMF882X_IDX_FIELD] == "29":
             frames_finished += 1
 
@@ -68,7 +69,9 @@ def main():
     im.fromarray(amplitude_frame).convert('L').save(f"{save_dir}/amplitude.png")
 
     hist = get_histogram()
-    print(hist)
+    with open(f"{save_dir}/hist.csv", 'w+') as my_csv:
+        csvWriter = csv.writer(my_csv, delimiter=',')
+        csvWriter.writerows(hist)
 
 if __name__ == "__main__":
     main()
