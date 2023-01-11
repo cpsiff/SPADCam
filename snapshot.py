@@ -7,8 +7,11 @@ from PIL import Image as im
 import numpy as np
 import os
 import time
+from read_histograms import process_raw_hists
+import serial
 
 CAPTURES_DIR = "captures"
+ARDUINO_SERIAL_PORT = "/dev/ttyACM0"
 
 def get_depth_frame(cam):
     frame = cam.requestFrame(200) #TODO what is 200?
@@ -22,7 +25,21 @@ def get_depth_frame(cam):
     return depth_buf, amplitude_buf
 
 def get_histogram():
-    return np.zeros(128)
+
+    arduino = serial.Serial(port=ARDUINO_SERIAL_PORT, baudrate=115200, timeout=0.1)
+    buffer = []
+
+    frames_finished = 0
+
+    while frames_finished < 2:
+        line = arduino.readline().rstrip()
+        if frames_finished >= 1:
+            buffer.append(line)
+        
+        if line.decode('utf-8').rstrip().split(',')[TMF882X_IDX_FIELD] == "29":
+            frames_finished += 1
+
+    return process_raw_hists(buffer)
 
 def main():
     curtime = time.strftime("%Y%m%d-%H%M%S")
