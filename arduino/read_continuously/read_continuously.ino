@@ -26,6 +26,7 @@
 // ---------------------------------------------- includes ----------------------------------------
 
 #include <Wire.h>
+#include <EEPROM.h>
 #include "registers_i2c.h"
 #include "tmf882x.h"
 #include "tmf882x_calib.h"
@@ -114,45 +115,63 @@ void setup ( )
   Wire.begin();
   Wire.setClock( I2C_CLK_SPEED );
 
-  tmf882xDisable( TMF882X_A );                                     // this resets the I2C address in the device
-  delay_in_microseconds(CAP_DISCHARGE_TIME_MS * 1000); // wait for a proper discharge of the cap
+  uint8_t buf[8];
+  uint8_t * ptr = buf;    
+  i2c_rx(TMF882X_A->i2cSlaveAddress, ENABLE, buf, 8);
+  Serial.print("Register: ");
+  Serial.print( buf[0] );
 
-  //Enable device (same as recieving 'e' on serial input in example script)
-  tmf882xEnable( TMF882X_A );
-  delay_in_microseconds( ENABLE_TIME_MS * 1000 );
-  tmf882xClkCorrection( TMF882X_A, clkCorrectionOn ); 
-  tmf882xSetLogLevel( TMF882X_A, MY_LOG_LEVEL );
-  tmf882xWakeup( TMF882X_A );
-  if ( tmf882xIsCpuReady( TMF882X_A, CPU_READY_TIME_MS ) )
+  if ( buf[0] != 97 )
   {
-    if ( tmf882xDownloadFirmware( TMF882X_A ) == BL_SUCCESS_OK ) 
+    tmf882xDisable( TMF882X_A );                                     // this resets the I2C address in the device
+    delay_in_microseconds(CAP_DISCHARGE_TIME_MS * 1000); // wait for a proper discharge of the cap
+
+    //Enable device (same as recieving 'e' on serial input in example script)
+    tmf882xEnable( TMF882X_A );
+    delay_in_microseconds( ENABLE_TIME_MS * 1000 );
+    tmf882xClkCorrection( TMF882X_A, clkCorrectionOn ); 
+    tmf882xSetLogLevel( TMF882X_A, MY_LOG_LEVEL );
+    tmf882xWakeup( TMF882X_A );
+    if ( tmf882xIsCpuReady( TMF882X_A, CPU_READY_TIME_MS ) )
     {
-      stateTmf882x = TMF882X_STATE_STOPPED;                           // prints on UART usage and waits for user input on serial
+      if ( tmf882xDownloadFirmware( TMF882X_A ) == BL_SUCCESS_OK ) 
+      {
+        stateTmf882x = TMF882X_STATE_STOPPED;                           // prints on UART usage and waits for user input on serial
+      }
+      else
+      {
+        stateTmf882x = TMF882X_STATE_ERROR;
+      }
     }
     else
     {
       stateTmf882x = TMF882X_STATE_ERROR;
-    }
-  }
-  else
+    }    
+
+    //Perform factory calibration (might as well do this every time at startup - same as receiving 'f' on serial input in example script)
+    tmf882xConfigure( TMF882X_A, 1, 4000, SPAD_MAP, 0 );    // no histogram dumping in factory calibration allowed, 4M iterations for factory calibration recommended
+    tmf882xFactoryCalibration( TMF882X_A );
+
+    //Configure the period, number of iterations (KiloIter), and spad map (SpadId)
+    tmf882xConfigure( TMF882X_A, PERIOD, KILO_ITERS, SPAD_MAP, 1 );   //configuration I was originally using
+    // tmf882xConfigure( TMF882X_A, 1, 9, TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_1, 1 );   //try to go fast - it seems like we're limited by i2c speed, not the sensor speed. This leads to same frame rate
+
+    //Begin measuring (same as recieving an 'm' on serial input in example script)
+    tmf882xClrAndEnableInterrupts( TMF882X_A, TMF882X_APP_I2C_RESULT_IRQ_MASK | TMF882X_APP_I2C_RAW_HISTOGRAM_IRQ_MASK );
+    tmf882xStartMeasurement( TMF882X_A );
+    stateTmf882x = TMF882X_STATE_MEASURE;
+  } else
   {
-    stateTmf882x = TMF882X_STATE_ERROR;
+    // stop reading measurements (taken from 's' in example script)
+    tmf882xStopMeasurement( TMF882X_A );
+    tmf882xDisableInterrupts( TMF882X_A, 0xFF );               // just disable all
+    stateTmf882x = TMF882X_STATE_STOPPED;
+
+    //Begin measuring (same as recieving an 'm' on serial input in example script)
+    tmf882xClrAndEnableInterrupts( TMF882X_A, TMF882X_APP_I2C_RESULT_IRQ_MASK | TMF882X_APP_I2C_RAW_HISTOGRAM_IRQ_MASK );
+    tmf882xStartMeasurement( TMF882X_A );
+    stateTmf882x = TMF882X_STATE_MEASURE;
   }
-
-  //Perform factory calibration (might as well do this every time at startup - same as receiving 'f' on serial input in example script)
-  tmf882xConfigure( TMF882X_A, 1, 4000, SPAD_MAP, 0 );    // no histogram dumping in factory calibration allowed, 4M iterations for factory calibration recommended
-  tmf882xFactoryCalibration( TMF882X_A );
-
-  //Configure the period, number of iterations (KiloIter), and spad map (SpadId)
-  
-  tmf882xConfigure( TMF882X_A, PERIOD, KILO_ITERS, SPAD_MAP, 1 );   //configuration I was originally using
-  // tmf882xConfigure( TMF882X_A, 1, 9, TMF882X_COM_SPAD_MAP_ID__spad_map_id__map_no_1, 1 );   //try to go fast - it seems like we're limited by i2c speed, not the sensor speed. This leads to same frame rate
-
-  //Begin measuring (same as recieving an 'm' on serial input in example script)
-  tmf882xClrAndEnableInterrupts( TMF882X_A, TMF882X_APP_I2C_RESULT_IRQ_MASK | TMF882X_APP_I2C_RAW_HISTOGRAM_IRQ_MASK );
-  tmf882xStartMeasurement( TMF882X_A );
-  stateTmf882x = TMF882X_STATE_MEASURE;
-
 }
 
 // Arduino main loop function, is executed cyclic
