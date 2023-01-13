@@ -60,6 +60,11 @@ def main():
 
     depth_frame, amplitude_frame = get_depth_frame(cam)
 
+    print("Captured depth image")
+
+    np.save(f"{save_dir}/depth.npy", depth_frame)
+    np.save(f"{save_dir}/amplitude.npy", amplitude_frame)
+
     # scale depth frame so that 4m is total white in depth image
     # this mimics https://docs.arducam.com/Raspberry-Pi-Camera/Tof-camera/Arducam-ToF-Camera-SDK/
     depth_frame = np.nan_to_num(depth_frame)
@@ -74,9 +79,12 @@ def main():
     im.fromarray(amplitude_frame).convert('L').save(f"{save_dir}/amplitude.png")
 
     hist = get_histogram()
+    print("Captured histogram")
     with open(f"{save_dir}/hists.csv", 'w+') as my_csv:
         csvWriter = csv.writer(my_csv, delimiter=',')
         csvWriter.writerows(hist)
+
+    np.save(f"{save_dir}/hists.npy", np.array(hist))
         
     fig, ax = plt.subplots(3, 3)
     hist_idx = 1 # start at 1 b/c 0 is reference hist
@@ -87,6 +95,8 @@ def main():
     
     plt.tight_layout()
     plt.savefig(f"{save_dir}/hists.png")
+
+    print("SUCCESS! (Ignore next two lines)")
 
 if __name__ == "__main__":
     main()
