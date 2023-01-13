@@ -34,23 +34,27 @@ def main():
         line = arduino.readline().rstrip()
         buffer.append(line)
 
-        if line.decode('utf-8').rstrip().split(',')[TMF882X_IDX_FIELD] == "29":
-            if not first_buffer: # throw out the first buffer, as it is probably incomplete
-                processed_hists = process_raw_hists(buffer)
-                buffer = []
+        try:
+            decoded_line = line.decode('utf-8').rstrip().split(',')
+            if len(decoded_line) > TMF882X_IDX_FIELD and decoded_line[TMF882X_IDX_FIELD] == "29":
+                if not first_buffer: # throw out the first buffer, as it is probably incomplete
+                    processed_hists = process_raw_hists(buffer)
+                    buffer = []
+                    
+                    if processed_hists is not None:
+                        ax.clear()
+                        hist = processed_hists[5] # plot just the center histogram for now
+                        ax.bar(range(len(hist)), hist, width=1.0)
+                        ax.set_ylabel("detection count")
+                        ax.set_xlabel("bin number / time / distance")
                 
-                if processed_hists is not None:
-                    ax.clear()
-                    hist = processed_hists[5] # plot just the center histogram for now
-                    ax.bar(range(len(hist)), hist, width=1.0)
-                    ax.set_ylabel("detection count")
-                    ax.set_xlabel("bin number / time / distance")
-            
-            first_buffer = False
+                first_buffer = False
+        except UnicodeDecodeError:
+            pass # if you start in a weird place you get random data that can't be decoded, so just ignore
 
-            # plt.pause() causes problems with reading from the serial port. It is what causes the
-            # WARNING: Buffer wrong size messages. But, I can't figure out a way to plot without it
-            plt.pause(0.0000001) # https://stackoverflow.com/questions/28269157/plotting-in-a-non-blocking-way-with-matplotlib
+        # plt.pause() causes problems with reading from the serial port. It is what causes the
+        # WARNING: Buffer wrong size messages. But, I can't figure out a way to plot without it
+        plt.pause(0.0000001) # https://stackoverflow.com/questions/28269157/plotting-in-a-non-blocking-way-with-matplotlib
 
 if __name__ == "__main__":
     main()
