@@ -3,6 +3,7 @@ Simultaneously take a snapshot from Arducam depth camera and from TMF8820 SPAD
 """
 
 import ArduCamDepthCamera as ac
+import matplotlib.pyplot as plt
 from PIL import Image as im
 import numpy as np
 import os
@@ -37,8 +38,12 @@ def get_histogram():
         if frames_finished >= 1:
             buffer.append(line)
 
-        if line.decode('utf-8').rstrip().split(',')[TMF882X_IDX_FIELD] == "29":
-            frames_finished += 1
+        try:
+            decoded_line = line.decode('utf-8').rstrip().split(',')
+            if len(decoded_line) > TMF882X_IDX_FIELD and decoded_line[TMF882X_IDX_FIELD] == "29":
+                frames_finished += 1
+        except UnicodeDecodeError:
+            pass # if you start in a weird place you get random data that can't be decoded, so just ignore
 
     return process_raw_hists(buffer)
 
@@ -55,6 +60,11 @@ def main():
 
     depth_frame, amplitude_frame = get_depth_frame(cam)
 
+    print("Captured depth image")
+
+    np.save(f"{save_dir}/depth.npy", depth_frame)
+    np.save(f"{save_dir}/amplitude.npy", amplitude_frame)
+
     # scale depth frame so that 4m is total white in depth image
     # this mimics https://docs.arducam.com/Raspberry-Pi-Camera/Tof-camera/Arducam-ToF-Camera-SDK/
     depth_frame = np.nan_to_num(depth_frame)
@@ -69,9 +79,24 @@ def main():
     im.fromarray(amplitude_frame).convert('L').save(f"{save_dir}/amplitude.png")
 
     hist = get_histogram()
-    with open(f"{save_dir}/hist.csv", 'w+') as my_csv:
+    print("Captured histogram")
+    with open(f"{save_dir}/hists.csv", 'w+') as my_csv:
         csvWriter = csv.writer(my_csv, delimiter=',')
         csvWriter.writerows(hist)
+
+    np.save(f"{save_dir}/hists.npy", np.array(hist))
+        
+    fig, ax = plt.subplots(3, 3)
+    hist_idx = 1 # start at 1 b/c 0 is reference hist
+    for row in range(3):
+        for col in range(3):
+            ax[row][col].bar(range(len(hist[hist_idx])), hist[hist_idx], width=1.0)
+            hist_idx += 1
+    
+    plt.tight_layout()
+    plt.savefig(f"{save_dir}/hists.png")
+
+    print("SUCCESS! (Ignore next two lines)")
 
 if __name__ == "__main__":
     main()

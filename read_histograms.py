@@ -33,7 +33,7 @@ def main():
 
 def process_raw_hists(buffer):
 
-    print(len(buffer))
+    # print(len(buffer))
     if len(buffer) != 31:
         print("WARNING: Buffer wrong size - skipping and returning None")
         return None

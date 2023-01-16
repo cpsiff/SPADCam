@@ -115,13 +115,14 @@ void setup ( )
   Wire.begin();
   Wire.setClock( I2C_CLK_SPEED );
 
+  //read from register on sensor to see if we need to upload firmware to it
   uint8_t buf[8];
   uint8_t * ptr = buf;    
   i2c_rx(TMF882X_A->i2cSlaveAddress, ENABLE, buf, 8);
-  Serial.print("Register: ");
-  Serial.print( buf[0] );
+  // Serial.print("Register: ");
+  // Serial.print( buf[0] );
 
-  if ( buf[0] != 97 )
+  if ( buf[0] != 97 ) //97 just determined through running the script and reading the value. TODO understand this / move to constant
   {
     tmf882xDisable( TMF882X_A );                                     // this resets the I2C address in the device
     delay_in_microseconds(CAP_DISCHARGE_TIME_MS * 1000); // wait for a proper discharge of the cap
